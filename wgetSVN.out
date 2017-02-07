@@ -1,0 +1,14 @@
+--2016-10-01 10:55:02--  http://OyewoleL:*password*@sunsoasvc01.grpdom.vwuk.corp/SOA/
+Resolving sunsoasvc01.grpdom.vwuk.corp (sunsoasvc01.grpdom.vwuk.corp)... 10.168.179.8
+Connecting to sunsoasvc01.grpdom.vwuk.corp (sunsoasvc01.grpdom.vwuk.corp)|10.168.179.8|:80... connected.
+HTTP request sent, awaiting response... 401 Authorization Required
+Authentication selected: Basic realm="Subversion Project2 repository"
+Reusing existing connection to sunsoasvc01.grpdom.vwuk.corp:80.
+HTTP request sent, awaiting response... 200 OK
+Length: 900 [text/html]
+Saving to: ‘index.html.1’
+
+     0K                                                       100% 13.5M=0s
+
+2016-10-01 10:55:02 (13.5 MB/s) - ‘index.html.1’ saved [900/900]
+

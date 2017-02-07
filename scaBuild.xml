@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<project name="scaDeploy" default="deploySCA">
+
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+    <taskdef resource="net/sf/antcontrib/antlib.xml" />
+
+    <property environment="env"/>
+    <property file="${basedir}/build.properties"/>
+
+	<echo>TNV=${target.environment} ... PLT=${project.list}</echo>
+	<propertyregex property="deployment.plan.environment" input="${target.environment}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp="'(.*)'" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp=" " replace="" global="true" casesensitive="false" />
+
+	<echo>TNV=${target.environment} ... PLT=${project.list}</echo>
+    <echo>basedir ${global.base.dir}</echo>
+    <echo>current folder ${env.CURRENT_FOLDER}</echo>
+    <echo>Deploy.Dir=${sca.deploy.dir}</echo>
+
+	<tstamp><format property="project.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+	<echo>Ant project initiated at: ${project.start}</echo>
+
+    <target name="deployAllSCA">
+		<tstamp><format property="deployAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll starting at: ${deployAll.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<for param="file">
+			<path id="scas.path.ref">
+				<dirset dir="${sca.build.dir}" casesensitive="yes">
+					<include name="AW*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Processing application: ${sca.application}</echo>
+				<!-- A 'compile' target is included in the Oracle 'package' target, so the 'compileSCA' target is omitted here -->
+				<antcall target="packageSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+				<if>
+					<equals arg1="${global.deploy}" arg2="true"/>
+					<then>
+						<antcall target="deploySCA">
+							<param name="sca.application" value="${sca.application}"/>
+						</antcall>
+					</then>
+				</if>
+			</sequential>
+		</for>
+		<tstamp><format property="deployAll.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll started at: ${deployAll.start}</echo>
+		<echo>Ant deployAll completed at: ${deployAll.finish}</echo>
+    </target>
+
+    <target name="deployAllNoCompileSCA">
+		<tstamp><format property="deployAllNoCompile.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAllNoCompile starting at: ${deployAllNoCompile.start}</echo>
+
+		<for param="file">
+			<path id="scas.path.ref">
+				<dirset dir="${sca.build.dir}" casesensitive="yes">
+					<include name="AW*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Deploying application: ${sca.application}</echo>
+
+				<if>
+					<equals arg1="${global.deploy}" arg2="true"/>
+					<then>
+						<antcall target="deploySCA">
+							<param name="sca.application" value="${sca.application}"/>
+						</antcall>
+					</then>
+				</if>
+			</sequential>
+		</for>
+		<tstamp><format property="deployAllNoCompile.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll started at: ${deployAllNoCompile.start}</echo>
+		<echo>Ant deployAll completed at: ${deployAllNoCompile.finish}</echo>
+    </target>
+
+    <target name="deployListSCA">
+		<tstamp><format property="deployList.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll starting at: ${deployAll.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<!-- Remove leading parameters in the input string, including the literal 'project.list' -->
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Processing application: ${sca.application}</echo>
+				<!-- A 'compile' target is included in the Oracle 'package' target, so the 'compileSCA' target is omitted here -->
+				<antcall target="packageSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+				<if>
+					<equals arg1="${global.deploy}" arg2="true"/>
+					<then>
+						<antcall target="deploySCA">
+							<param name="sca.application" value="${sca.application}"/>
+						</antcall>
+					</then>
+				</if>
+			</sequential>
+		</for>
+		<tstamp><format property="deployList.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployList started at: ${deployList.start}</echo>
+		<echo>Ant deployList completed at: ${deployList.finish}</echo>
+    </target>
+
+    <target name="deploySCA">
+        <if>
+            <equals arg1="${global.undeploy}" arg2="true"/>
+            <then>
+		        <echo>Undeploy ${sca.application}</echo>
+                <antcall target="undeploySCA" inheritall="true"/>
+            </then>
+        </if>
+        <if>
+            <not>
+            	<available file="${sca.build.dir}/${sca.application}/deploy" type="dir"/>
+            </not>
+            <then>
+		        <echo>Dir ${sca.build.dir}/${sca.application}/deploy not found, calling packageSCA ... </echo>
+                <antcall target="packageSCA" inheritall="true"/>
+            </then>
+        </if>
+        
+        <!-- Key Deployment Properties -->
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        <property name="config.plan" value="configplan"/>
+        <property name="config.plan.file" value="${sca.build.dir}/${sca.application}/${sca.application}_cfgplan_${deployment.plan.environment}.xml"/>
+
+        <if>
+            <not>
+            	<available file="${config.plan.file}" type="file"/>
+            </not>
+            <then>
+		        <echo>Config Plan (${config.plan.file}) does not exist, nullifying the parameter ... </echo>
+				<propertyregex property="config.plan" input="${config.plan}" override="true" regexp="configplan" replace="noConfigplan" global="true" casesensitive="false" />
+				<propertyregex property="config.plan.file" input="${config.plan.file}" override="true" regexp=".*" replace="" global="true" casesensitive="false" />
+            </then>
+        </if>
+        
+        <!-- Deploy the SCA composite/project -->
+        <echo>deploy SCA application: ${sca.application}</echo>
+        <echo>deploy on ${deploy.serverURL} with user ${deploy.user}</echo>
+        <echo>deploy sarFile ${sca.deploy.dir}/sca_${sca.application}_rev1.0.jar</echo>
+        <echo>deploy config ${config.plan}</echo>
+        <!-- Deploy the JAR/ZIP -->
+        <ant antfile="${oracle.home}/bin/ant-sca-deploy.xml" inheritall="false" target="deploy">
+            <property name="wl_home" value="${wl_home}"/>
+            <property name="oracle.home" value="${oracle.home}"/>
+            <property name="serverURL" value="${deploy.serverURL}"/>
+            <property name="user" value="${deploy.user}"/>
+            <property name="password" value="${deploy.password}"/>
+            <property name="overwrite" value="${deploy.overwrite}"/>
+            <property name="forceDefault" value="${deploy.forceDefault}"/>
+            <property name="sarLocation" value="${sca.build.dir}/${sca.application}/deploy/sca_${sca.application}_rev1.0.jar"/>
+            <property name="partition" value="${sca.partition}"/>
+			<property name="${config.plan}" value="${config.plan.file}"/>
+        </ant>
+		<tstamp><format property="deploySCA" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deploySCA completed at: ${deploySCA}</echo>
+    </target>
+
+    <target name="undeployAllSCA">
+
+		<for param="file">
+			<path id="scas.path.ref">
+				<dirset dir="${sca.build.dir}" casesensitive="yes">
+					<include name="AW*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<antcall target="undeploySCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+
+		<tstamp><format property="undeployAll" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll completed at: ${undeployAll}</echo>
+    </target>
+
+    <target name="undeployListSCA">
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<antcall target="undeploySCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+
+		<tstamp><format property="undeployListSCA" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll completed at: ${undeployListSCA}</echo>
+    </target>
+
+    <!-- Undeploy the JAR/ZIP -->
+    <target name="undeploySCA">
+        <echo>undeploy SCA application: ${sca.application}</echo>
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.undeployFolderName" from="${deployment.plan.environment}.undeployAppName"/>
+		<echo>Var: ${deploy.bpelPort}</echo>
+
+        <ant antfile="${oracle.home}/bin/ant-sca-deploy.xml" inheritall="false" target="undeploy">
+            <property name="wl_home" value="${wl_home}"/>
+            <property name="oracle.home" value="${oracle.home}"/>
+            <property name="serverURL" value="${deploy.serverURL}"/>
+            <property name="user" value="${deploy.user}"/>
+            <property name="password" value="${deploy.password}"/>
+            <property name="compositeName" value="${sca.application}"/>
+            <property name="partition" value="${sca.partition}"/>
+            <property name="revision" value="1.0"/>
+        </ant>
+		<tstamp><format property="undeploySCA" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant undeploySCA completed at: ${undeploySCA}</echo>
+    </target>
+
+    <target name="packageAllSCA">
+		<tstamp><format property="packageAllSCA.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll starting at: ${packageAllSCA.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<!-- Remove leading parameters in the input string, including the literal 'project.list' -->
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+
+		<for param="file">
+			<path id="scas.path.ref">
+				<dirset dir="${sca.build.dir}" casesensitive="yes">
+					<include name="AW*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Packaging application: ${sca.application}</echo>
+				<antcall target="packageSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+		<tstamp><format property="packageAllSCA.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant packageAllSCA started at: ${packageAllSCA.start}</echo>
+		<echo>Ant packageAllSCA completed at: ${packageAllSCA.finish}</echo>
+    </target>
+
+    <target name="packageListSCA">
+		<tstamp><format property="packageListSCA.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll starting at: ${packageListSCA.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<!-- Remove leading parameters in the input string, including the literal 'project.list' -->
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Packaging application: ${sca.application}</echo>
+				<antcall target="packageSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+		<tstamp><format property="packageListSCA.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant packageListSCA started at: ${packageListSCA.start}</echo>
+		<echo>Ant packageListSCA completed at: ${packageListSCA.finish}</echo>
+    </target>
+
+    <target name="packageSCA">
+		<echo>Package SCA application: ${sca.application}</echo>
+        <if>
+            <not>
+            	<!-- There is no easy way to know that a composite has been previously compiled! -->
+            	<available file="${sca.build.dir}/${sca.application}" type="dir"/>
+            </not>
+            <then>
+                <antcall target="compileSCA" inheritall="true"/>
+            </then>
+        </if>
+
+        <!-- Key Deployment Properties -->
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        
+        <echo>package SCA application: ${sca.application}</echo>
+        <!-- Package the SCA composite/project -->
+        <ant antfile="${oracle.home}/bin/ant-sca-package.xml" inheritall="false" target="package">
+            <property name="scac.application.home" value="${sca.application.home}"/>
+            <property name="compositeDir" value="${sca.build.dir}/${sca.application}/SOA"/>
+            <property name="compositeName" value="${sca.application}"/>
+            <property name="revision" value="1.0"/>
+        </ant>
+		<tstamp><format property="packageSCA" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant packageSCA completed at: ${packageSCA}</echo>
+    </target>
+
+    <target name="compileAllSCA">
+		<tstamp><format property="compileAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileAll starting at: ${deployAll.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<for param="file">
+			<path id="scas.path.ref">
+				<dirset dir="${sca.build.dir}" casesensitive="yes">
+					<include name="AW*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Compiling application: ${sca.application}</echo>
+				<antcall target="compileSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+		<tstamp><format property="compileAll.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileAll started at: ${compileAll.start}</echo>
+		<echo>Ant compileAll completed at: ${compileAll.finish}</echo>
+    </target>
+
+    <target name="compileListSCA">
+		<tstamp><format property="compileListSCA.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileListSCA starting at: ${compileListSCA.start}</echo>
+
+		<antcall target="cleanAll" />
+
+		<!-- Remove leading parameters in the input string, including the literal 'project.list' -->
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="sca.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Processing application: ${sca.application}</echo>
+				<antcall target="compileSCA">
+					<param name="sca.application" value="${sca.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+		<tstamp><format property="compileListSCA.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileListSCA started at: ${compileListSCA.start}</echo>
+		<echo>Ant compileListSCA completed at: ${compileListSCA.finish}</echo>
+    </target>
+
+    <target name="compileSCA">
+		<echo>Compile SCA application: ${sca.application}</echo>
+        <if>
+            <not>
+            	<available file="${sca.build.dir}/${sca.application}" type="dir"/>
+            </not>
+            <then>
+		        <echo>Copying source artefacts for: ${sca.application}</echo>
+                <antcall target="copyApplication" inheritall="true"/>
+            </then>
+        </if>
+
+        <!-- Key Deployment Properties -->
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        
+        <echo>compile SCA application: ${sca.application}</echo>
+        <!-- Compile the SCA composite/project -->
+        <ant antfile="${oracle.home}/bin/ant-sca-compile.xml" inheritall="false" target="scac">
+            <property name="scac.input" value="${sca.build.dir}/${sca.application}/SOA/composite.xml"/>
+            <property name="scac.output" value="${sca.deploy.dir}/sca_${sca.application}_rev1.0.xml"/>
+            <property name="scac.error" value="${sca.deploy.dir}/sca_${sca.application}_error.xml"/>
+            <property name="failonerror" value="true"/>
+            <property name="scac.application.home" value="${sca.application.home}"/>
+            <property name="scac.displayLevel" value="2"/>
+            <property name="scac.reportSchemaValidationErrors" value="true"/>
+        </ant>
+		<tstamp><format property="compileSCA" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileSCA completed at: ${compileSCA} with status: ${return.code}</echo>
+    </target>
+
+    <target name="cleanAll">
+		<tstamp><format property="cleanAll" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant cleanAll starting at: ${cleanAll}</echo>
+        <delete dir="${sca.deploy.dir}"/>
+        <mkdir dir="${sca.deploy.dir}"/>
+        <delete deleteonexit="true" failonerror="false" performGCOnFailedDelete="true">
+        	<fileset dir="${sca.build.dir}"/>
+        </delete>
+        <sleep seconds="5"/>
+        <mkdir dir="${sca.build.dir}"/>
+
+        <!-- Copy artefacts from source directory to temp/staging directory -->
+        <copy todir="${sca.build.dir}">
+            <fileset dir="${source.sca.repository}/CMOS" includes="AW**/**/***"/>
+            <fileset dir="${source.sca.repository}/UTIL" includes="AW**/**/***"/>
+        </copy>
+       
+		<delete>
+			<fileset dir="${sca.build.dir}" includes="**/sca_*_rev*.0.jar"/>
+		</delete>
+    </target> 
+
+    <target name="copyApplication">
+        <delete dir="${sca.build.dir}/${sca.application}"/>
+        <mkdir dir="${sca.build.dir}/${sca.application}"/>
+        <delete dir="${sca.deploy.dir}/${sca.application}"/>
+        <mkdir dir="${sca.deploy.dir}/${sca.application}"/>
+
+        <!-- Copy artefacts from source directory to temp/staging directory -->
+        <copy todir="${sca.build.dir}">
+            <!-- <fileset dir="${source.sca.repository}" includes="${sca.application}*/**/***"/> -->
+            <fileset dir="${source.sca.repository}/${sca.application}"/>
+        </copy>
+    </target> 
+
+</project>

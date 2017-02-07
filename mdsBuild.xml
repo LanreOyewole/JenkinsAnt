@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<project name="mdsDeploy" default="deployMDS">
+
+    <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
+    <property file="${basedir}/build.properties"/>
+    <property environment="env"/>
+    
+	<propertyregex property="deployment.plan.environment" input="${target.environment}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp="'(.*)'" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp="," replace=" " global="true" casesensitive="false" />
+
+	<echo>TNV=${target.environment} ... PLT=${project.list}</echo>
+    <echo>basedir ${basedir}</echo>
+    <echo>current folder ${env.CURRENT_FOLDER}</echo>
+    <echo>current test: ${wn.oracle.home}</echo>
+
+	<tstamp><format property="project.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+	<echo>Ant project initiated at: ${project.start}</echo>
+
+    <target name="deployMDS">
+        <echo>deploying MDS application: ${mds.application}</echo>
+        <echo>remove and create local MDS temp</echo>
+        <if>
+            <equals arg1="${mds.undeploy}" arg2="true"/>
+            <then>
+                <antcall target="undeployMDS"/>
+            </then>
+        </if>
+        
+        <!-- General Configuration Properties -->
+        <property name="mds.deploy.dir" value="${mds.deploy.dir}/${mds.application}/deploy"/>
+        <property name="mds.build.dir" value="${mds.build.dir}/${mds.application}/bin"/>
+        
+        <!-- Key Deployment Properties -->
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        <propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+        
+		<antcall target="packageMDS"/>
+        
+        <!-- Prepare to deploy or undeploy the JAR/ZIP -->
+        <echo>deploy MDS application: ${mds.application}</echo>
+        <echo>deploy on ${deploy.serverURL} with user ${deploy.user}</echo>
+        <echo>deploy sarFile ${mds.deploy.dir}/${mds.application}_mds.zip</echo>
+        
+        <!-- Deploy the JAR/ZIP -->
+        <ant antfile="${oracle.home}/bin/ant-sca-deploy.xml" inheritall="false" target="deploy">
+            <property name="wl_home" value="${wl_home}"/>
+            <property name="oracle.home" value="${oracle.home}"/>
+            <property name="serverURL" value="${deploy.serverURL}"/>
+            <property name="user" value="${deploy.user}"/>
+            <property name="password" value="${deploy.password}"/>
+            <property name="overwrite" value="${deploy.overwrite}"/>
+            <property name="forceDefault" value="${deploy.forceDefault}"/>
+            <property name="sarLocation" value="${mds.deploy.dir}/${mds.application}_mds.zip"/>
+            <property name="partition" value="${deploy.partition}"/>
+        </ant>
+
+		<tstamp><format property="deployMDS.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant MDS project started at: ${project.start}</echo>
+		<echo>Ant deployMDS completed at: ${deployMDS.finish}</echo>
+    </target>
+    
+    <target name="packageMDS">
+        <echo>Packaging MDS application: ${mds.application}</echo>
+        
+        <!-- General Configuration Properties -->
+        <property name="mds.deploy.dir" value="${mds.deploy.dir}/${mds.application}/deploy"/>
+        <property name="mds.build.dir" value="${mds.build.dir}/${mds.application}/bin"/>
+        
+        <!-- Key Deployment Properties -->
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        <propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+        
+		<antcall target="clean"/>
+        
+        <!-- JAR and then ZIP the copied artefacts -->
+        <echo>create zip from file MDS store</echo>
+        <zip destfile="${mds.deploy.dir}/${mds.application}_mds.jar" compress="false">
+            <fileset dir="${mds.build.dir}" includes="${project.list}"/>
+        </zip>
+        <echo>create zip with MDS jar</echo>
+        <zip destfile="${mds.deploy.dir}/${mds.application}_mds.zip" compress="false">
+            <fileset dir="${mds.deploy.dir}" includes="*.jar"/>
+        </zip>
+
+		<path id="jar.files">
+            <fileset dir="${mds.build.dir}" includes="${project.list}"/>
+		</path>
+        <property name="jar.files.list" value="${toString:jar.files}"/>
+        <echo message="_____________________ Replacing (${mds.build.dir}) with () null/empty-string _______________________________" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="\\" replace="/" global="true" casesensitive="false" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="${mds.build.dir}/" replace="" global="true" casesensitive="false" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp=";" replace="${line.separator}" global="true" casesensitive="false" />
+        <echo message="#####################################################################################" />
+        <echo message="Built .JAR (${mds.deploy.dir}/${mds.application}_mds.jar) file-list follows: " />
+        <echo message="${jar.files.list}" />
+        <echo message="#####################################################################################" />
+
+		<tstamp><format property="packageMDS.finish" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant MDS project started at: ${project.start}</echo>
+		<echo>Ant packageMDS completed at: ${packageMDS.finish}</echo>
+    </target>
+    
+    <!-- Undeploy the JAR/ZIP -->
+    <target name="undeployMDS">
+        <echo>undeploy MDS application: ${mds.application}</echo>
+        <propertycopy name="deploy.serverURL" from="${deployment.plan.environment}.serverURL"/>
+        <propertycopy name="deploy.overwrite" from="${deployment.plan.environment}.overwrite"/>
+        <propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+        <propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+        <propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+        <propertycopy name="deploy.undeployFolderName" from="${deployment.plan.environment}.undeployFolderName"/>
+
+        <ant antfile="${oracle.home}/bin/ant-sca-deploy.xml" inheritall="false" target="removeSharedData">
+            <property name="wl_home" value="${wl_home}"/>
+            <property name="oracle.home" value="${oracle.home}"/>
+            <property name="serverURL" value="${deploy.serverURL}"/>
+            <property name="user" value="${deploy.user}"/>
+            <property name="password" value="${deploy.password}"/>
+            <property name="folderName" value="${deploy.undeployFolderName}"/>
+        </ant>
+    </target>
+
+    <target name="clean">
+        <property name="mds.deploy.dir" value="${mds.deploy.dir}/${mds.application}/deploy"/>
+        <property name="mds.build.dir" value="${mds.build.dir}/${mds.application}/bin"/>
+        <propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        <propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+        
+        <delete dir="${mds.deploy.dir}"/>
+        <mkdir dir="${mds.deploy.dir}"/>
+        <delete dir="${mds.build.dir}"/>
+        <mkdir dir="${mds.build.dir}"/>
+        
+        <!-- Copy artefacts from source directory to temp/staging directory -->
+        <copy todir="${mds.build.dir}">
+            <fileset dir="${source.mds.repository}" includes="ServiceRepository/*/*/** CommonServices/*/*/** Maximo_EAI/*/*/**" excludes="**/*.jpr **/pom.xml **/servicebus.sboverview **/.settings" />
+        </copy>
+
+        <echo>Target: ${deployment.plan.environment}</echo>
+        <echo>IPAddress: ${deploy.ipAddress}</echo>
+        <echo>BPEL.Hostname: ${deploy.soa.hostname}</echo>
+        <echo>BPEL.Port: ${deploy.bpelPort}</echo>
+        <echo>OSB.Hostname: ${deploy.osb.hostname}</echo>
+        <echo>OSB.Port: ${deploy.osbPort}</echo>
+
+	    <antcall target="customiseForEnvironment" />
+	</target>
+        
+    <target name="customiseForEnvironment">
+		<!-- Load customisation-specific properties file ... now merged with build.properties
+		<property file="${basedir}/customisation.properties"/>
+		-->
+        <propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+        <propertycopy name="deploy.osb.hostname" from="${deployment.plan.environment}.osb.hostname"/>
+        <propertycopy name="deploy.soa.hostname" from="${deployment.plan.environment}.soa.hostname"/>
+        <propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+        <propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+        <propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+        <propertycopy name="deploy.mdsPath2" from="${deployment.plan.environment}.mdsPath2"/>
+        <propertycopy name="deploy.mdsPath3" from="${deployment.plan.environment}.mdsPath3"/>
+        <propertycopy name="deploy.mdsPath4" from="${deployment.plan.environment}.mdsPath4"/>
+        <propertycopy name="deploy.mdsPath5" from="${deployment.plan.environment}.mdsPath5"/>
+        <propertycopy name="deploy.relativePath2" from="${deployment.plan.environment}.relativePath2"/>
+        <propertycopy name="deploy.relativePath3" from="${deployment.plan.environment}.relativePath3"/>
+        <propertycopy name="deploy.relativePath4" from="${deployment.plan.environment}.relativePath4"/>
+        <propertycopy name="deploy.relativePath5" from="${deployment.plan.environment}.relativePath5"/>
+        <propertycopy name="deploy.owReplacement" from="${deployment.plan.environment}.owReplacement"/>
+        
+		<!-- Perform substitutions, typically web service resource URIs -->
+		<!-- WSDL manipulations -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern='http://.+\:([0-9]+)/.+"'/>
+			<substitution expression='http://${deploy.osb.hostname}:${deploy.osbPort}/MeterReads/AWMeterReads/1.0"'/>
+			<fileset dir="${mds.build.dir}" casesensitive="no">
+				<include name="CommonServices/Artifacts/CommonSchema/MeterReads/wsdl/AWMeterReadsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		<replace dir="${mds.build.dir}" token="../../xsd/EnterpriseObjectLibrary/Utility/AWMaxTransactions_V1.xsd" value="oramds:/apps/ServiceRepository/xsd/EnterpriseObjectLibrary/Utility/AWMaxTransactions_V1.xsd">
+			<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+		</replace>
+		<!-- Start with BPEL services first -->
+		<echo>Replacing WSDL URL ... from (127.0.0.1:7001/soa-infra) to (${deploy.soa.hostname}:${deploy.bpelPort}/soa-infra)</echo>
+		<replace dir="${mds.build.dir}" token="127.0.0.1:7001/soa-infra" value="${deploy.soa.hostname}:${deploy.bpelPort}/soa-infra">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replace dir="${mds.build.dir}" token="localhost:7001/soa-infra" value="${deploy.soa.hostname}:${deploy.bpelPort}/soa-infra">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		
+		<!-- OSB services next -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/soa-infra"/>
+			<substitution expression="${deploy.soa.hostname}:${deploy.bpelPort}/soa-infra"/>
+			<fileset dir="${mds.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		<replace dir="${mds.build.dir}" token="aws2devsoaapp01" value="${deploy.osb.hostname}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+			<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+		</replace>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="aws2([a-zA-Z]+)soaapp01"/>
+			<substitution expression="${deploy.osb.hostname}"/>
+			<fileset dir="${mds.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		<replace dir="${mds.build.dir}" token="127.0.0.1:7001/" value="${deploy.osb.hostname}:${deploy.osbPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replace dir="${mds.build.dir}" token="localhost:7001/" value="${deploy.osb.hostname}:${deploy.osbPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/"/>
+			<substitution expression="${deploy.osb.hostname}:${deploy.osbPort}/"/>
+			<fileset dir="${mds.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		<echo>Replacing WSDL Path: ${deploy.relativePath5} with ${deploy.mdsPath5}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath5}" value="${deploy.mdsPath5}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<echo>Replacing WSDL Path: ${deploy.relativePath4} with ${deploy.mdsPath4}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath4}" value="${deploy.mdsPath4}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<echo>Replacing WSDL Path: ${deploy.relativePath3} with ${deploy.mdsPath3}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath3}" value="${deploy.mdsPath3}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<echo>Replacing WSDL Path: ${deploy.relativePath2} with ${deploy.mdsPath2}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath2}" value="${deploy.mdsPath2}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+
+		<!-- Finally replace all port numbers in WSDL URLs -->
+		<replace dir="${mds.build.dir}" token=":8001/" value=":${deploy.bpelPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<!-- Finally replace all port numbers in WSDL URLs -->
+		<replace dir="${mds.build.dir}" token=":8011/" value=":${deploy.osbPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+
+		<!-- XSD manipulations -->
+		<echo>Replacing XSD Path: ${deploy.relativePath5} with ${deploy.mdsPath5}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath5}" value="${deploy.mdsPath5}">
+			<include name="ServiceRepository/services/CMOS/**/*.xsd"/>
+		</replace>
+		<echo>Replacing XSD Path: ${deploy.relativePath4} with ${deploy.mdsPath4}</echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath4}" value="${deploy.mdsPath4}">
+			<include name="ServiceRepository/services/CMOS/**/*.xsd"/>
+		</replace>
+		<echo>Replacing XSD Path: </echo>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath3}" value="${deploy.mdsPath3}">
+			<include name="ServiceRepository/services/CMOS/**/*.xsd"/>
+		</replace>
+		<replace dir="${mds.build.dir}" token="${deploy.relativePath2}" value="${deploy.mdsPath2}">
+			<include name="ServiceRepository/services/CMOS/**/*.xsd"/>
+		</replace>
+
+		<!-- DVM manipulations -->
+		<echo>Replacing DVM: DEV with ${deployment.plan.environment}</echo>
+		<replace dir="${mds.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="ServiceRepository/services/CMOS/**/Environment.dvm"/>
+		</replace>
+		<replace dir="${mds.build.dir}" token="10.31.107.2:8001" value="${deploy.soa.hostname}:${deploy.bpelPort}">
+			<include name="ServiceRepository/services/CMOS/DVM/ServerAddress.dvm"/>
+		</replace>
+	</target>
+        
+	<target name="test">
+		<path id="jar.files">
+            <fileset dir="${mds.build.dir}" includes="${project.list}"/>
+		</path>
+        <property name="jar.files.list" value="${toString:jar.files}"/>
+        <echo message="_____________________ Replacing (${mds.build.dir}) with () _______________________________" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="\\" replace="/" global="true" casesensitive="false" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="${mds.build.dir}/" replace="" global="true" casesensitive="false" />
+		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp=";" replace="${line.separator}" global="true" casesensitive="false" />
+        <echo message="#####################################################################################" />
+        <echo message="Built .JAR (${mds.deploy.dir}/${mds.application}_mds.jar) file-list follows: " />
+        <echo message="${jar.files.list}" />
+        <echo message="#####################################################################################" />
+	</target>
+
+</project>

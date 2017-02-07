@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<project name="ConfigExport">
+
+	<taskdef name="configjar" classname="com.bea.alsb.tools.configjar.ant.ConfigJarTask"/>
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<taskdef name="wlst" classname="weblogic.ant.taskdefs.management.WLSTTask"/>
+
+	<property file="${basedir}/build.properties"/>
+    <property environment="env"/>
+	
+	<propertyregex property="deployment.plan.environment" input="${target.environment}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp="'(.*)'" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp=" " replace="" global="true" casesensitive="false" />
+
+	<echo>TNV=${target.environment} ... PLT=${project.list}</echo>
+
+	<property name="mw.home" location="${wn.oracle.home}"/>
+	<property name="wl.home" location="${wl_home}"/>
+	<property name="osb.home" location="${osb_home}"/>
+	<property name="eclipse.home" value="${fmw.home}/oepe"/>
+	<property name="weblogic.home" value="${fmw.home}/wlserver_10.3"/>
+	<property name="metadata.dir" value="${workspace.dir}/.metadata"/>
+	<property name="osb.home" value="${fmw.home}/osb"/>
+	<property name="domain.import.script" value="${global.base.dir}/import.py"/>
+	<property name="domain.undeploy.script" value="${global.base.dir}/undeploy.py"/>
+	<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+	<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+	<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+	<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+	<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+	<target name="createAll">
+		<tstamp><format property="createAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant createAll starting at: ${deployAll.start}</echo>
+
+        <antcall target="init" />
+        <antcall target="cleanAll" />
+       
+		<tstamp><format property="createAll.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant createAll started at: ${deployAll.start}</echo>
+		<echo>Ant createAll completed at: ${deployAll.stop}</echo>
+	</target>
+
+	<target name="init">
+		<echo>init ... deployment.plan.environment: ${deployment.plan.environment}</echo>
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<echo>init ... deploy.user: ${deploy.user}</echo>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+	</target>
+
+	<target name="cleanAll">
+		<tstamp><format property="cleanAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant cleanAll starting at: ${cleanAll.start}</echo>
+
+    </target> 
+       
+	<target name="test">
+        <antcall target="init" />
+
+		<wlst filename="jmsModule.py" debug="true" failOnError="true" arguments="weblogic welcome1 ${deploy.server} createJMSModule testModule1">
+	       <script>  
+			adminUser=sys.argv[1]  
+			adminPassword=sys.argv[2]  
+			adminUrl=sys.argv[3]
+			UserOperation_=sys.argv[4]
+			moduleName_=sys.argv[5]
+
+			<!--
+			connect(adminUser,adminPassword,adminUrl) 
+			
+			cd('/')
+			cmo.createJMSSystemResource(moduleName)
+			cd('/JMSSystemResources/'+moduleName)
+			Thread.sleep(5)	
+			domainRuntime()
+			-->
+          </script>
+		</wlst>
+    </target> 
+       
+	<target name="customisationForEnvironment">
+	</target>
+
+	<target name="createJMSModule">
+        <antcall target="init" />
+
+		<wlst filename="jmsModule.py" debug="true" failOnError="true" arguments="weblogic welcome1 ${deploy.server} createJMSModule testModule1">
+	       <script>  
+			adminUser=sys.argv[1]  
+			adminPassword=sys.argv[2]  
+			adminUrl=sys.argv[3]
+			UserOperation_=sys.argv[4]
+			moduleName_=sys.argv[5]
+
+			<!--
+			connect(adminUser,adminPassword,adminUrl) 
+			
+			cd('/')
+			cmo.createJMSSystemResource(moduleName)
+			cd('/JMSSystemResources/'+moduleName)
+			Thread.sleep(5)	
+			domainRuntime()
+			-->
+          </script>
+		</wlst>
+	</target>
+
+	<target name="createWorkManager">
+        <antcall target="init" />
+
+		<wlst fileName="" debug="true" failOnError="true" arguments="${deploy.user} ${deploy.password} ${deploy.server} ${osb.application} ${osb.deploy.dir}/${osb.application}.config.jar ${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml">
+	       <script>  
+           adminUser=sys.argv[1]  
+           adminPassword=sys.argv[2]  
+           adminUrl=sys.argv[3]
+
+           exportJar = sys.argv[5]
+           customFile = sys.argv[6]
+           passphrase = "osb"
+           project = sys.argv[4]
+
+           connect(adminUser,adminPassword,adminUrl) 
+           domainRuntime()
+          </script>
+		</wlst>
+	</target>
+
+</project>
+

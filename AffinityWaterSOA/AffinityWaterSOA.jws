@@ -1,0 +1,83 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<jws:workspace xmlns:jws="http://xmlns.oracle.com/ide/project">
+   <value n="appTemplateId" v="SOAApplicationTemplate_1"/>
+   <hash n="component-versions">
+      <value n="oracle.adf.share.dt.migration.jps.JaznCredStoreMigratorHelper" v="11.1.1.1.0"/>
+      <value n="oracle.adf.share.dt.migration.wsm.PolicyAttachmentMigratorHelper" v="12.1.2.0.0"/>
+      <value n="oracle.adfdt.controller.adfc.source.migration.SavePointDataSourceForWLSMigrator" v="11.1.1.1.0"/>
+      <value n="oracle.adfdtinternal.model.ide.security.extension.AdfSecurityMigrator" v="11.1.1.1.0.13"/>
+      <value n="oracle.ide.model.Project" v="11.1.1.1.0;12.1.3.0.0"/>
+      <value n="oracle.jbo.dt.jdevx.deployment.JbdProjectMigrator" v="11.1.2.0.0"/>
+      <value n="oracle.jdevimpl.appresources.ApplicationSrcDirMigrator" v="11.1.2.0.0"/>
+      <value n="oracle.jdevimpl.deploy.migrators.JeeDeploymentMigrator" v="12.1.2.0.0"/>
+      <value n="oracle.jdevimpl.xml.oc4j.jps.JpsConfigMigratorHelper" v="11.1.1.1.0.1"/>
+      <value n="oracle.jdevimpl.xml.wl.WeblogicMigratorHelper" v="11.1.1.1.0"/>
+      <value n="oracle.mds.internal.dt.deploy.base.MarMigratorHelper" v="11.1.1.1.0"/>
+      <value n="oracle.mds.internal.dt.ide.migrator.MDSConfigMigratorHelper" v="11.1.1.0.5313"/>
+   </hash>
+   <list n="contentSets">
+      <string v="oracle.mds.internal.dt.ide.appresources.MDSAppResourceCSProvider/MDSAppContentSet"/>
+      <string v="oracle.jdeveloper.model.PathsConfiguration/ApplicationSrcContentSet"/>
+      <string v="oracle.jdeveloper.model.PathsConfiguration/ADFContentSet"/>
+      <string v="oracle.jdeveloper.model.PathsConfiguration/ApplicationBuildToolContentSet"/>
+      <string v="oracle.jdeveloper.model.PathsConfiguration/ResourceBundlesContentSet"/>
+   </list>
+   <list n="listOfChildren">
+      <hash><url n="URL" path="AWOWErrorLoggingUTLv1/AWOWErrorLoggingUTLv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWProcessErrorUTLv1/AWOWProcessErrorUTLv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT101WCBPv1/AWOWT101WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT102MEBFv1/AWOWT102MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT103MEBFv1/AWOWT103MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT104WCBPv1/AWOWT104WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT105MEBFv1/AWOWT105MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT105WCBPv1/AWOWT105WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT107WCBPv1/AWOWT107WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT108MEBFv1/AWOWT108MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT109MEBFv1/AWOWT109MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT111MEBFv1/AWOWT111MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT112MEBFv1/AWOWT112MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT113WCBPv1/AWOWT113WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT114WCBPv1/AWOWT114WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT115WCBPv1/AWOWT115WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT117WCBPv1/AWOWT117WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT129WCBPv1/AWOWT129WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT132MEBFv1/AWOWT132MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT133WCBPv1/AWOWT133WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT134MEBFv1/AWOWT134MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT134WCBPv1/AWOWT134WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT135MEBFv1/AWOWT135MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT136WCBPv1/AWOWT136WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT137MEBFv1/AWOWT137MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT137WCBPv1/AWOWT137WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT138WCBPv1/AWOWT138WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT139WCBPv1/AWOWT139WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT141MEBFv1/AWOWT141MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT142MEBFv1/AWOWT142MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT143WCBPv1/AWOWT143WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT144WCBPv1/AWOWT144WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT145WCBPv1/AWOWT145WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT146MEBFv1/AWOWT146MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT147WCBPv1/AWOWT147WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT152WCBPv1/AWOWT152WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT153WCBPv1/AWOWT153WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT154WCBPv1/AWOWT154WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT157WCBPv1/AWOWT157WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT160MEBFv1/AWOWT160MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT161MEBFv1/AWOWT161MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT162MEBFv1/AWOWT162MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT162WCBPv1/AWOWT162WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT163WCBPv1/AWOWT163WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT164MEBFv1/AWOWT164MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWT181WCBPv1/AWOWT181WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR112MEBFv1/AWOWTCORR112MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR114WCBPv1/AWOWTCORR114WCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR146MEBFv1/AWOWTCORR146MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR165MEBFv1/AWOWTCORR165MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR166MEBFv1/AWOWTCORR166MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR171MEBFv1/AWOWTCORR171MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTCORR172MEBFv1/AWOWTCORR172MEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTGlobalMEBFv1/AWOWTGlobalMEBFv1.jpr"/></hash>
+      <hash><url n="URL" path="AWOWTGlobalWCBPv1/AWOWTGlobalWCBPv1.jpr"/></hash>
+      <hash><url n="URL" path="AWSRTransactionsProc/AWSRTransactionsProc.jpr"/></hash>
+   </list>
+</jws:workspace>

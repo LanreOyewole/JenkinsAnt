@@ -1,0 +1,10 @@
+<configjarSettings xmlns="http://www.bea.com/alsb/tools/configjar/config">
+    <source>
+        <!-- Single project definition -->
+        <project dir=""/>
+        <system dir=""/>
+    </source>
+    <configjar jar="">
+        <projectLevel includeSystem=""/>
+    </configjar>
+</configjarSettings>

@@ -1,0 +1,891 @@
+<?xml version="1.0" encoding="windows-1252"?>
+<project name="ConfigExport">
+
+	<taskdef name="configjar" classname="com.bea.alsb.tools.configjar.ant.ConfigJarTask"/>
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<taskdef name="wlst" classname="weblogic.ant.taskdefs.management.WLSTTask"/>
+
+	<property file="${basedir}/build.properties"/>
+    <property environment="env"/>
+	
+	<propertyregex property="deployment.plan.environment" input="${target.environment}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp="'(.*)'" select="\1" casesensitive="false" />
+	<propertyregex property="project.list" input="${project.list}" override="true" regexp=" " replace="" global="true" casesensitive="false" />
+
+	<echo>TNV=${target.environment} ... PLT=${project.list}</echo>
+
+	<property name="mw.home" location="${wn.oracle.home}"/>
+	<property name="wl.home" location="${wl_home}"/>
+	<property name="osb.home" location="${osb_home}"/>
+	<property name="eclipse.home" value="${fmw.home}/oepe"/>
+	<property name="weblogic.home" value="${fmw.home}/wlserver_10.3"/>
+	<property name="metadata.dir" value="${workspace.dir}/.metadata"/>
+	<property name="osb.home" value="${fmw.home}/osb"/>
+	<property name="domain.import.script" value="${global.base.dir}/import.py"/>
+	<property name="domain.undeploy.script" value="${global.base.dir}/undeploy.py"/>
+	<propertycopy name="deploy.swim.url.ew.service" from="${deployment.plan.environment}.swim.url.ew.service"/>
+	<propertycopy name="deploy.swim.url.swim.service" from="${deployment.plan.environment}.swim.url.swim.service"/>
+	<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+	<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+	<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+	<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+	<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+	<target name="deployAllOSB">
+		<tstamp><format property="deployAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll starting at: ${deployAll.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+        <antcall target="cleanAll" />
+       
+		<echo>Processing files in: ${osb.build.dir}</echo>
+		<for param="file">
+			<path id="osb.path.ref">
+				<dirset dir="${osb.build.dir}" casesensitive="yes">
+					<include name="*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="osb.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Processing application: ${osb.application}</echo>
+				<antcall target="compileOSB">
+					<param name="osb.application" value="${osb.application}"/>
+				</antcall>
+				<if>
+					<equals arg1="${osb.deploy}" arg2="true"/>
+					<then>
+						<antcall target="deployToOSB">
+							<param name="osb.application" value="${osb.application}"/>
+						</antcall>
+					</then>
+				</if>
+			</sequential>
+		</for>
+		<tstamp><format property="deployAll.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAll started at: ${deployAll.start}</echo>
+		<echo>Ant deployAll completed at: ${deployAll.stop}</echo>
+	</target>
+
+	<target name="deployAllAsOneOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="deployAllAsOneOSB.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAllAsOneOSB starting at: ${deployAllAsOneOSB.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+		<property name="osb.application" value="None"/>
+
+        <antcall target="compileAllAsOneOSB" />
+
+        <if>
+            <not>
+            	<available file="${osb.settings.dir}/${osb.application}.settings.xml" type="file"/>
+            </not>
+            <then>
+		        <echo>Settings file (${osb.settings.dir}/${osb.application}.settings.xml) does not exist!.  Aborting ...</echo>
+                <fail/>
+            </then>
+        </if>
+
+		<echo message="Deploying OSB All Projects"/>
+		<antcall target="importToOSB" />
+
+		<tstamp><format property="deployAllAsOneOSB.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployAllAsOneOSB starting at: ${deployAllAsOneOSB.stop}</echo>
+	</target>
+
+	<target name="deployListAsOneOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="deployListAsOneOSB.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployListAsOneOSB starting at: ${deployListAsOneOSB.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+		<property name="osb.application" value="None"/>
+
+		<antcall target="compileListAsOneOSB" />
+
+		<echo message="Deploying OSB All Projects"/>
+		<antcall target="importToOSB" />
+
+		<tstamp><format property="deployListAsOneOSB.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant deployListAsOneOSB starting at: ${deployListAsOneOSB.stop}</echo>
+	</target>
+
+	<target name="deployToOSB">
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+        <if>
+            <not>
+            	<available file="${osb.deploy.dir}/${osb.application}.jar" type="file"/>
+            </not>
+            <then>
+		        <echo>Settings file (${osb.settings.dir}/${osb.application}.settings.xml) does not exist!.  Compiling ${osb.application} ...</echo>
+                <antcall target="compileOSB" inheritall="true"/>
+            </then>
+        </if>
+		<if>
+			<equals arg1="${osb.undeploy}" arg2="true"/>
+			<then>
+				<antcall target="undeployFromOSB">
+					<param name="osb.application" value="${osb.application}"/>
+				</antcall>
+			</then>
+		</if>
+
+		<echo message="Deploying OSB project: ${osb.application}"/>
+		<antcall target="importToOSB">
+			<param name="osb.application" value="${osb.application}"/>
+		</antcall>
+	</target>
+
+	<target name="undeployAllOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="undeployAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant undeployAll starting at: ${undeployAll.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+		<echo>Undeploying all projects &amp; resources from ${deploy.server} ... </echo>
+
+		<antcall target="undeployFromOSB">
+			<param name="osb.application" value="${osb.application}"/>
+		</antcall>
+
+		<tstamp><format property="undeployAll.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant undeployAll started at: ${undeployAll.start}</echo>
+		<echo>Ant undeployAll completed at: ${undeployAll.stop}</echo>
+	</target>
+
+	<target name="undeployListOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="undeployAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant undeployAll starting at: ${undeployAll.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+		<echo>Processing files in: ${osb.build.dir}</echo>
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="osb.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Undeploying application: ${osb.application}</echo>
+
+				<antcall target="undeployFromOSB">
+					<param name="osb.application" value="${osb.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+
+		<tstamp><format property="undeployAll.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant undeployAll started at: ${undeployAll.start}</echo>
+		<echo>Ant undeployAll completed at: ${undeployAll.stop}</echo>
+	</target>
+
+	<target name="compileAllOSB">
+		<tstamp><format property="compileAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileAll starting at: ${compileAll.start}</echo>
+
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+        <antcall target="cleanAll" />
+		<antcall target="customisationForEnvironment" inheritAll="true" />
+
+		<echo>Processing files in: ${osb.build.dir}</echo>
+		<for param="file">
+			<path id="osb.path.ref">
+				<dirset dir="${osb.build.dir}" casesensitive="yes">
+					<include name="*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="osb.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Processing application: ${osb.application}</echo>
+				<antcall target="compileOSB">
+					<param name="osb.application" value="${osb.application}"/>
+				</antcall>
+			</sequential>
+		</for>
+		<tstamp><format property="compileAll.stop" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileAll started at: ${compileAll.start}</echo>
+		<echo>Ant compileAll completed at: ${compileAll.stop}</echo>
+	</target>
+
+	<target name="compileAllAsOneOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="compileAllAsOneOSB.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileAllAsOneOSB starting at: ${compileAllAsOneOSB.start}</echo>
+
+		<antcall target="initAllOSB" inheritall="true"/>
+		
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+		<property name="osb.application" value="None"/>
+		<property name="settingsFile" value="${osb.settings.dir}/${osb.application}.settings.xml"/>
+
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<property name="settingsFile" value="${osb.settings.dir}/${osb.application}.settings.xml"/>
+		<fail unless="settingsFile"/>
+
+		<antcall target="customisationForEnvironment" inheritAll="true" />
+
+		<!-- Update content of DVM -->
+		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+		</replace>
+
+		<propertyregex property="import.customFile" input="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+        <configjar failonerror="true" errorProperty="" settingsFile="${settingsFile}" />
+	</target>
+
+	<target name="compileListAsOneOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<tstamp><format property="compileListAsOneOSB.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant compileListAsOneOSB starting at: ${compileListAsOneOSB.start} ... ${project.list}</echo>
+
+		<antcall target="initListOSB" inheritall="true"/>
+		
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+		<property name="osb.application" value="None"/>
+		<property name="settingsFile" value="${osb.settings.dir}/${osb.application}.settings.xml"/>
+
+		<fail unless="settingsFile"/>
+
+		<antcall target="customisationForEnvironment" inheritAll="true" />
+		<!-- Update content of DVM -->
+		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+		</replace>
+
+		<propertyregex property="import.customFile" input="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+        <configjar failonerror="true" errorProperty="" settingsFile="${settingsFile}" />
+	</target>
+
+	<target name="compileOSB">
+		<property name="settingsFile" value="${osb.settings.dir}/${osb.application}.settings.xml"/>
+		<fail unless="settingsFile"/>
+		<echo>Compiling with settings file: ${osb.settings.dir}/${osb.application}.settings.xml</echo>
+
+		<antcall target="initOSB" inheritAll="true" />
+
+		<if>
+			<equals arg1="${osb.application}" arg2="AWOWProcessErrorsUTLv1"/>
+			<then>
+				<!-- Update content of DVM -->
+				<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+					<include name="${osb.application}/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+				</replace>
+				<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
+					<include name="${osb.application}/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+				</replace>
+			</then>
+		</if>
+
+		<!-- <property name="import.customFile" value="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml"/> -->
+		<propertyregex property="import.customFile" input="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+        <configjar failonerror="true" errorProperty="" settingsFile="${settingsFile}" />
+	</target>
+
+	<target name="initOSB">
+		<property name="task.debug" value="true"/>
+		<property name="task.failonerror" value="true"/>
+		<property name="task.errorproperty" value=""/>
+
+        <if>
+            <not>
+            	<available file="${osb.build.dir}/${osb.application}" type="dir"/>
+            </not>
+            <then>
+                <antcall target="copyApplication" inheritall="true"/>
+            </then>
+        </if>
+
+		<loadfile property="osb.settingsFile.template" srcFile="${global.base.dir}/osbSettings.template.xml"/>
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile.template}" override="true" regexp='project dir=""' replace='project dir="${osb.build.dir}/${osb.application}"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='system dir=""' replace='system dir="${osb.build.dir}/System"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='configjar jar=""' replace='configjar jar="${osb.deploy.dir}/${osb.application}.jar"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='projectLevel includeSystem=""' replace='projectLevel includeSystem="${osb.include.system}"' casesensitive="false" />
+		<echo>Updated string:${osb.settingsFile}</echo>
+		<echo file="${osb.settings.dir}/${osb.application}.settings.xml">${osb.settingsFile}</echo>
+	</target>
+
+	<target name="initAllOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+		<property name="task.debug" value="true"/>
+		<property name="task.failonerror" value="true"/>
+		<property name="task.errorproperty" value=""/>
+		<property name="first.pass" value="0" />
+
+        <antcall target="cleanAll" />
+
+        <delete file="${osb.settings.dir}/${osb.application}.settings.xml"/>
+		<loadfile property="osb.settingsFile.template" srcFile="${global.base.dir}/osbSettings.template.xml"/>
+
+		<for param="file">
+			<path id="osb.path.ref">
+				<dirset dir="${osb.build.dir}" casesensitive="yes">
+					<include name="*"/>
+				</dirset>
+			</path>
+			<sequential>
+				<propertyregex property="osb.list.application" input="@{file}" override="true" regexp="(.*)\\(.*)" select="\2" casesensitive="false" />
+				<echo>Processing application: ${osb.list.application}</echo>
+
+				<if>
+					<equals arg1="${first.pass}" arg2="0"/>
+					<then>
+						<propertyregex property="osb.settingsFile" input="${osb.settingsFile.template}" override="true" regexp='project dir=""' replace='project dir="${osb.build.dir}/${osb.list.application}"' casesensitive="false" />
+						<propertyregex property="first.pass" input="${first.pass}" override="true" regexp="0" select="1" casesensitive="false" />
+					</then>
+					<else>
+						<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp="&lt;!-- Single project definition --&gt;" replace='&lt;!-- Single project definition --&gt;${line.separator}        &lt;project dir="${osb.build.dir}/${osb.list.application}"/&gt;' casesensitive="false" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='system dir=""' replace='system dir="${osb.build.dir}/System"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='configjar jar=""' replace='configjar jar="${osb.deploy.dir}/${osb.application}.jar"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='projectLevel includeSystem=""' replace='projectLevel includeSystem="${osb.include.system}"' casesensitive="false" />
+		<echo>initListOSB Updated string:${osb.settingsFile}</echo>
+		<echo file="${osb.settings.dir}/${osb.application}.settings.xml">${osb.settingsFile}</echo>
+	</target>
+
+	<target name="initListOSB">
+		<propertyregex property="osb.application" input="None" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+		<propertyregex property="project.list" input="${project.list}" override="true" regexp="(.*project.list )(.*)" select="\2" casesensitive="false" />
+		<property name="task.debug" value="true"/>
+		<property name="task.failonerror" value="true"/>
+		<property name="task.errorproperty" value=""/>
+		<property name="first.pass" value="0" />
+
+        <antcall target="cleanAll" />
+
+        <delete file="${osb.settings.dir}/${osb.application}.settings.xml"/>
+		<loadfile property="osb.settingsFile.template" srcFile="${global.base.dir}/osbSettings.template.xml"/>
+
+		<for list="${project.list}" param="file">
+			<sequential>
+				<propertyregex property="osb.list.application" input="@{file}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Processing application: ${osb.list.application}</echo>
+
+				<if>
+					<equals arg1="${first.pass}" arg2="0"/>
+					<then>
+						<propertyregex property="osb.settingsFile" input="${osb.settingsFile.template}" override="true" regexp='project dir=""' replace='project dir="${osb.build.dir}/${osb.list.application}"' casesensitive="false" />
+						<propertyregex property="first.pass" input="${first.pass}" override="true" regexp="0" select="1" casesensitive="false" />
+					</then>
+					<else>
+						<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp="&lt;!-- Single project definition --&gt;" replace='&lt;!-- Single project definition --&gt;${line.separator}        &lt;project dir="${osb.build.dir}/${osb.list.application}"/&gt;' casesensitive="false" />
+					</else>
+				</if>
+			</sequential>
+		</for>
+
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='system dir=""' replace='system dir="${osb.build.dir}/System"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='configjar jar=""' replace='configjar jar="${osb.deploy.dir}/${osb.application}.jar"' casesensitive="false" />
+		<propertyregex property="osb.settingsFile" input="${osb.settingsFile}" override="true" regexp='projectLevel includeSystem=""' replace='projectLevel includeSystem="${osb.include.system}"' casesensitive="false" />
+		<echo>initListOSB Updated string:${osb.settingsFile}</echo>
+		<echo file="${osb.settings.dir}/${osb.application}.settings.xml">${osb.settingsFile}</echo>
+	</target>
+
+    <target name="copyApplication">
+        <delete dir="${osb.build.dir}/${osb.application}"/>
+        <echo>Creating directory: ${osb.build.dir}/${osb.application}</echo>
+        <mkdir dir="${osb.build.dir}/${osb.application}"/>
+
+		<echo>Copying ${osb.application} to ${osb.build.dir} ...</echo>
+        <!-- Copy artefacts from source directory to temp/staging directory -->
+        <copy todir="${osb.build.dir}">
+            <fileset dir="${source.osb.repository}" includes="${osb.application}*/**/***"/>
+        </copy>
+    </target> 
+
+	<target name="cleanAll">
+		<tstamp><format property="cleanAll.start" pattern="yyyy-MM-dd HH:mm:ss" locale="en,UK"/></tstamp>
+		<echo>Ant cleanAll starting at: ${cleanAll.start}</echo>
+
+        <delete dir="${osb.deploy.dir}"/>
+        <mkdir dir="${osb.deploy.dir}"/>
+        <delete dir="${osb.build.dir}"/>
+        <mkdir dir="${osb.build.dir}"/>
+        <delete dir="${osb.settings.dir}"/>
+        <mkdir dir="${osb.settings.dir}"/>
+
+        <!-- Copy artefacts from source directory to temp/staging directory -->
+        <copy todir="${osb.build.dir}">
+            <fileset dir="${source.osb.repository}/CMOS" includes="AW**/**/***"/>
+            <fileset dir="${source.osb.repository}/CRM" includes="AW**/**/***"/>
+            <fileset dir="${source.osb.repository}/GIS" includes="AW**/**/***"/>
+            <fileset dir="${source.osb.repository}/UtilityServices" includes="AW**/**/***"/>
+            <fileset dir="${source.osb.repository}" includes="Common**/**/*** ServiceRepository**/**/***"/>
+            <fileset dir="${source.osb.repository}/CMOS" excludes="**/.data"/>
+            <fileset dir="${source.osb.repository}/CMOS" excludes="**/.settings"/>
+        </copy>
+    </target> 
+       
+	<target name="test">
+        <copy todir="C:/WorkArea/JenkinsAnt/temp">
+            <fileset dir="C:/WorkArea/JenkinsAnt/workspace/CheckoutOSBArtefacts/CMOS" includes="AW**/**/***"/>
+            <fileset dir="C:/WorkArea/JenkinsAnt/workspace/CheckoutOSBArtefacts" includes="Common**/**/*** ServiceRepository**/**/***"/>
+        </copy>
+    </target> 
+       
+	<target name="customisationForEnvironment">
+		<propertycopy name="deploy.maximo.hostname" from="${deployment.plan.environment}.maximo.hostname"/>
+		<propertycopy name="deploy.hostname" from="${deployment.plan.environment}.hostname"/>
+        <propertycopy name="deploy.mdsPath2" from="${deployment.plan.environment}.mdsPath2"/>
+        <propertycopy name="deploy.mdsPath3" from="${deployment.plan.environment}.mdsPath3"/>
+        <propertycopy name="deploy.mdsPath4" from="${deployment.plan.environment}.mdsPath4"/>
+        <propertycopy name="deploy.mdsPath5" from="${deployment.plan.environment}.mdsPath5"/>
+        <propertycopy name="deploy.relativePath2" from="${deployment.plan.environment}.relativePath2"/>
+        <propertycopy name="deploy.relativePath3" from="${deployment.plan.environment}.relativePath3"/>
+        <propertycopy name="deploy.relativePath4" from="${deployment.plan.environment}.relativePath4"/>
+        <propertycopy name="deploy.relativePath5" from="${deployment.plan.environment}.relativePath5"/>
+        <propertycopy name="deploy.owReplacement" from="${deployment.plan.environment}.owReplacement"/>
+        
+		<!-- Perform substitutions, typically web service resource URIs -->
+		<!-- WSDL manipulations -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern='http://.+\:([0-9]+)/.+"'/>
+			<substitution expression='http://${deploy.hostname}:${deploy.osbPort}/MeterReads/AWMeterReads/1.0"'/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="CommonServices/Artifacts/CommonSchema/MeterReads/wsdl/AWMeterReadsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Start with BPEL services first -->
+		<echo>Replacing WSDL URL ... from (127.0.0.1:7001/soa-infra) to (${deploy.hostname}:${deploy.bpelPort}/soa-infra)</echo>
+		<replace dir="${osb.build.dir}" token="127.0.0.1:7001/soa-infra" value="${deploy.hostname}:${deploy.bpelPort}/soa-infra">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="localhost:7001/soa-infra" value="${deploy.hostname}:${deploy.bpelPort}/soa-infra">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/soa-infra"/>
+			<substitution expression="${deploy.hostname}:${deploy.bpelPort}/soa-infra"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		<replace dir="${osb.build.dir}" token="aws2devsoaapp01" value="${deploy.hostname}">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+			<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+		</replace>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="aws2([a-zA-Z]+)soaapp01"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+		
+		<!-- OSB services next -->
+		<!--
+		<replace dir="${osb.build.dir}" token="127.0.0.1:7001/AWOW" value="${deployment.plan.environment}.ipAddress${deployment.plan.environment}.osbPort/AWOW">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		-->
+		<replace dir="${osb.build.dir}" token="127.0.0.1:7001/" value="${deploy.hostname}:${deploy.osbPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="localhost:7001/" value="${deploy.hostname}:${deploy.osbPort}/">
+			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+		</replace>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/"/>
+			<substitution expression="${deploy.hostname}:${deploy.osbPort}/"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
+				<include name="ServiceRepository/services/soa-infra/AWMaxTransactionsABCS.V1.0.wsdl"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Update content of ORM files -->
+		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
+			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="AWOWProcessNotificationsUTLv1/PUB/Interface/ORM/AWOWProcessNotificationsUTL-or-mappings.xml"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
+			<include name="AWOWProcessNotificationsUTLv1/PUB/Interface/ORM/AWOWProcessNotificationsUTL-or-mappings.xml"/>
+		</replace>
+		<!-- Update content of DVMs -->
+		<echo>Replacing DVM: DEV with ${deployment.plan.environment}</echo>
+		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
+			<include name="**/Environment.dvm"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="10.31.107.2:8001" value="${deploy.ipAddress}:${deploy.bpelPort}">
+			<include name="**/ServerAddress.dvm"/>
+		</replace>
+		<replace dir="${osb.build.dir}" token="MOSL MPS" value="${deploy.swim.environment}">
+			<include name="**/Swimware.dvm"/>
+		</replace>
+
+		<!-- Update content of XML, Business and Proxy services -->
+		<!-- Replace localhost and 127.0.0.1 references to SCA/BPEL services -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/soa-infra"/>
+			<substitution expression="${deploy.ipAddress}:${deploy.bpelPort}/soa-infra"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="127.0.0.1\:([0-9]+)/soa-infra"/>
+			<substitution expression="${deploy.ipAddress}:${deploy.bpelPort}/soa-infra"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<!-- Replace localhost and 127.0.0.1 references to OSB services -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="localhost\:([0-9]+)/"/>
+			<substitution expression="${deploy.ipAddress}:${deploy.osbPort}/"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<!-- Replace Swimware URL -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="http.*EWService.svc"/>
+			<substitution expression="${deploy.swim.url.ew.service}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/SwimwareEWService.bix"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="http.*SwimService.svc"/>
+			<substitution expression="${deploy.swim.url.swim.service}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/SwimwareSwimService.bix"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Replace numeric hostname values -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${local.ipAddress}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${DEV.ipAddress}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${ST.ipAddress}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${SIT.ipAddress}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Replace BPEL port values (first) -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="\:([0-9]+)/soa-infra"/>
+			<substitution expression=":${deploy.bpelPort}/soa-infra"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<!-- Replace port values -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="\:([0-9]+)/"/>
+			<substitution expression=":${deploy.osbPort}/"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Replace hostname values -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${local.hostname}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${DEV.hostname}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${ST.hostname}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${SIT.hostname}"/>
+			<substitution expression="${deploy.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+
+		<!-- Process Maximo hostname values -->
+		<!-- Special instruction for DEV, use ST endpoints instead for now (August 2016) -->
+		<if>
+			<equals arg1="${deployment.plan.environment}" arg2="DEV"/>
+			<then>
+				<propertyregex property="deploy.maximo.hostname" input="${ST.maximo.hostname}" override="true" regexp="(.*)" select="\1" casesensitive="false" />
+				<echo>Maximo hostname: ${deploy.maximo.hostname}</echo>
+			</then>
+		</if>
+
+		<!-- Replace Maximo hostname values -->
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${local.maximo.hostname}"/>
+			<substitution expression="${deploy.maximo.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${DEV.maximo.hostname}"/>
+			<substitution expression="${deploy.maximo.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${ST.maximo.hostname}"/>
+			<substitution expression="${deploy.maximo.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${SIT.maximo.hostname}"/>
+			<substitution expression="${deploy.maximo.hostname}"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		<!-- Disabled ... the regexp pattern does not work!!!
+		<replaceregexp byline="true" flags="gi">
+			<regexp pattern="${local.maximo.hostname} | ${DEV.maximo.hostname} | ${ST.maximo.hostname} | ${SIT.maximo.hostname}"/>
+			<substitution expression="${deploy.maximo.hostname}/"/>
+			<fileset dir="${osb.build.dir}" casesensitive="no">
+				<include name="**/*.bix"/>
+				<include name="**/*.proxy"/>
+				<include name="**/*.xml"/>
+			</fileset>
+		</replaceregexp>
+		-->
+	</target>
+
+	<target name="undeployFromOSB">
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+		<wlst fileName="${domain.undeploy.script}" debug="true" failOnError="true" arguments="${deploy.user} ${deploy.password} ${deploy.server} ${osb.application} ${osb.deploy.dir}/${osb.application}.jar ${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml">
+			<script>  
+           adminUser=sys.argv[1]  
+           adminPassword=sys.argv[2]  
+           adminUrl=sys.argv[3]
+
+           exportJar = sys.argv[5]
+           customFile = sys.argv[6]
+           passphrase = "osb"
+           project = sys.argv[4]
+
+           connect(adminUser,adminPassword,adminUrl) 
+           domainRuntime()
+          </script>
+		</wlst>
+	</target>
+
+	<target name="exportFromOSB">
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+
+		<wlst fileName="${domain.export.script}" debug="true" failOnError="false" arguments="${deploy.user} ${deploy.password} ${deploy.server} ${osb.application} ${export.jar} ${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml">
+			<script>  
+			   adminUser=sys.argv[1]  
+			   adminPassword=sys.argv[2]  
+			   adminUrl=sys.argv[3]
+
+			   exportJar = sys.argv[5]
+			   customFile = sys.argv[6]
+			   passphrase = "osb"
+			   project = sys.argv[4]
+
+			   connect(adminUser,adminPassword,adminUrl) 
+			   domainRuntime()
+			</script>
+		</wlst>
+	</target>
+
+	<target name="importToOSB">
+		<echo>deploy OSB application: ${osb.application}</echo>
+		<propertycopy name="deploy.user" from="${deployment.plan.environment}.user"/>
+		<propertycopy name="deploy.password" from="${deployment.plan.environment}.password"/>
+		<propertycopy name="deploy.forceDefault" from="${deployment.plan.environment}.forceDefault"/>
+		<propertycopy name="deploy.ipAddress" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.bpelPort" from="${deployment.plan.environment}.bpelPort"/>
+		<propertycopy name="deploy.osbPort" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.server.ip" from="${deployment.plan.environment}.ipAddress"/>
+		<propertycopy name="deploy.server.port" from="${deployment.plan.environment}.osbPort"/>
+		<propertycopy name="deploy.adminPort" from="${deployment.plan.environment}.adminPort"/>
+		<property name="deploy.server" value="t3://${deploy.ipAddress}:${deploy.adminPort}"/>
+		<property name="import.jar.file" value="${osb.deploy.dir}/${osb.application}.jar"/>
+		<echo>DeployServer: ${deploy.server}</echo>
+
+		<!-- <wlst fileName="${domain.import.script}" debug="true" failOnError="false" arguments="${deploy.user} ${deploy.password} ${deploy.server} ${import.project} ${import.jar} ${import.customFile}"> -->
+		<wlst fileName="${domain.import.script}" debug="true" failOnError="true" arguments="${deploy.user} ${deploy.password} ${deploy.server} ${osb.application} ${import.jar.file} ${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml">
+			<script>  
+			   adminUser=sys.argv[1]  
+			   adminPassword=sys.argv[2]  
+			   adminUrl=sys.argv[3]
+
+			   passphrase = "osb"
+
+			   project=sys.argv[4]
+			   importJar=sys.argv[5]
+			   customFile=sys.argv[6]
+
+			   connect(adminUser,adminPassword,adminUrl) 
+			   domainRuntime()
+			</script>
+		</wlst>
+	</target>
+
+	<target name="exportFromWorkspace">
+		<!--delete failonerror="false" includeemptydirs="true" dir="${metadata.dir}"/-->
+		<java dir="${eclipse.home}" jar="${eclipse.home}/plugins/org.eclipse.equinox.launcher_1.1.0.v20100507.jar" fork="true" failonerror="true" maxmemory="768m">
+			<jvmarg line="-XX:MaxPermSize=256m"/>
+			<arg line="-data ${workspace.dir}"/>
+			<arg line="-application com.bea.alsb.core.ConfigExport"/>
+			<arg line="-configProject ${config.project}"/>
+			<arg line="-configJar ${config.jar}"/>
+			<arg line="-configSubProjects ${config.subprojects}"/>
+			<arg line="-includeDependencies ${config.includeDependencies}"/>
+			<sysproperty key="weblogic.home" value="${weblogic.home}"/>
+			<sysproperty key="osb.home" value="${osb.home}"/>
+			<sysproperty key="osgi.bundlefile.limit" value="500"/>
+			<sysproperty key="harvester.home" value="${osb.home}/harvester"/>
+			<sysproperty key="osgi.nl" value="en_US"/>
+			<sysproperty key="sun.lang.ClassLoader.allowArraySyntax" value="true"/>
+		</java>
+	</target>
+
+</project>
+
