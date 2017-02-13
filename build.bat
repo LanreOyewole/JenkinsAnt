@@ -1,7 +1,7 @@
 
 REM cd %1
 
-set ANT_HOME=C:/Ant196
+set ANT_HOME=/usr/bin/ant
 set MW_HOME=C:/Oracle/Middleware/Oracle_Home
 set WL_HOME=%MW_HOME%/wlserver
 set JAVA_HOME=C:/Java8
