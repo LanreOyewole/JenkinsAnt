@@ -1,0 +1,22 @@
+Started by an SCM change
+Building in workspace /var/lib/jenkins/workspace/CheckGit
+Cloning the remote Git repository
+Cloning repository https://github.com/LanreOyewole/JenkinsAnt.git
+ > git init /var/lib/jenkins/workspace/CheckGit # timeout=10
+Fetching upstream changes from https://github.com/LanreOyewole/JenkinsAnt.git
+ > git --version # timeout=10
+using GIT_ASKPASS to set credentials 
+ > git fetch --tags --progress https://github.com/LanreOyewole/JenkinsAnt.git +refs/heads/*:refs/remotes/origin/*
+ > git config remote.origin.url https://github.com/LanreOyewole/JenkinsAnt.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config remote.origin.url https://github.com/LanreOyewole/JenkinsAnt.git # timeout=10
+Fetching upstream changes from https://github.com/LanreOyewole/JenkinsAnt.git
+using GIT_ASKPASS to set credentials 
+ > git fetch --tags --progress https://github.com/LanreOyewole/JenkinsAnt.git +refs/heads/*:refs/remotes/origin/*
+ > git rev-parse refs/remotes/origin/master^{commit} # timeout=10
+ > git rev-parse refs/remotes/origin/origin/master^{commit} # timeout=10
+Checking out Revision 24aebcdc803551896d64a1b327898f35216d8a78 (refs/remotes/origin/master)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 24aebcdc803551896d64a1b327898f35216d8a78
+First time build. Skipping changelog.
+Finished: SUCCESS
