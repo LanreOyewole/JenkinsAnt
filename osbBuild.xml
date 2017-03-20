@@ -278,7 +278,7 @@
 
 		<!-- Update content of DVM -->
 		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
-			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessErrorsUTLv1/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 		</replace>
 
 		<propertyregex property="import.customFile" input="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml" override="true" regexp="(.*)" select="\1" casesensitive="false" />
@@ -301,7 +301,7 @@
 		<antcall target="customisationForEnvironment" inheritAll="true" />
 		<!-- Update content of DVM -->
 		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
-			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessErrorsUTLv1/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 		</replace>
 
 		<propertyregex property="import.customFile" input="${global.base.dir}/OSBCustomizationFile_${deployment.plan.environment}.xml" override="true" regexp="(.*)" select="\1" casesensitive="false" />
@@ -316,14 +316,14 @@
 		<antcall target="initOSB" inheritAll="true" />
 
 		<if>
-			<equals arg1="${osb.application}" arg2="AWOWProcessErrorsUTLv1"/>
+			<equals arg1="${osb.application}" arg2="ServiceProcessErrorsUTLv1"/>
 			<then>
 				<!-- Update content of DVM -->
 				<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
-					<include name="${osb.application}/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+					<include name="${osb.application}/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 				</replace>
 				<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
-					<include name="${osb.application}/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+					<include name="${osb.application}/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 				</replace>
 			</then>
 		</if>
@@ -533,7 +533,7 @@
 		
 		<!-- OSB services next -->
 		<!--
-		<replace dir="${osb.build.dir}" token="127.0.0.1:7001/AWOW" value="${deployment.plan.environment}.ipAddress${deployment.plan.environment}.osbPort/AWOW">
+		<replace dir="${osb.build.dir}" token="127.0.0.1:7001/Service" value="${deployment.plan.environment}.ipAddress${deployment.plan.environment}.osbPort/Service">
 			<include name="ServiceRepository/services/CMOS/**/*.wsdl"/>
 		</replace>
 		-->
@@ -554,16 +554,16 @@
 
 		<!-- Update content of ORM files -->
 		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
-			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessErrorsUTLv1/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 		</replace>
 		<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
-			<include name="AWOWProcessErrorsUTLv1/PUB/Interface/ORM/AWOWProcessErrorsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessErrorsUTLv1/PUB/Interface/ORM/ServiceProcessErrorsUTL-or-mappings.xml"/>
 		</replace>
 		<replace dir="${osb.build.dir}" token="DEV" value="${deployment.plan.environment}">
-			<include name="AWOWProcessNotificationsUTLv1/PUB/Interface/ORM/AWOWProcessNotificationsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessNotificationsUTLv1/PUB/Interface/ORM/ServiceProcessNotificationsUTL-or-mappings.xml"/>
 		</replace>
 		<replace dir="${osb.build.dir}" token="ALL" value="${deployment.plan.environment}">
-			<include name="AWOWProcessNotificationsUTLv1/PUB/Interface/ORM/AWOWProcessNotificationsUTL-or-mappings.xml"/>
+			<include name="ServiceProcessNotificationsUTLv1/PUB/Interface/ORM/ServiceProcessNotificationsUTL-or-mappings.xml"/>
 		</replace>
 		<!-- Update content of DVMs -->
 		<echo>Replacing DVM: DEV with ${deployment.plan.environment}</echo>

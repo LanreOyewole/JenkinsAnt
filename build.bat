@@ -2,9 +2,9 @@
 REM cd %1
 
 set ANT_HOME=/usr/bin/ant
-set MW_HOME=C:/Oracle/Middleware/Oracle_Home
+set MW_HOME=/Oracle/Middleware/Oracle_Home
 set WL_HOME=%MW_HOME%/wlserver
-set JAVA_HOME=C:/Java8
+set JAVA_HOME=/Java8
 set PATH=%ANT_HOME%\bin;%PATH%
 set CURRENT_FOLDER=%CD%
 REM set weblogic.home=%MW_HOME%/wlserver
@@ -16,12 +16,12 @@ IF "%~nx1"=="scaBuild.xml" set CLASSPATH=%MW_HOME%/osb/lib/modules/oracle.servic
 IF "%~nx1"=="mdsBuild.xml" set CLASSPATH=%MW_HOME%/osb/lib/modules/oracle.servicebus.kernel-wls.jar;%MW_HOME%/osb/lib/modules/oracle.servicebus.kernel-api.jar;%MW_HOME%/wlserver/server/lib/weblogic.jar;%MW_HOME%/Oracle_OSB1/lib/alsb.jar;%MW_HOME%/oep/common/modules/com.bea.common.configfwk_1.3.0.0.jar
 IF "%~nx1"=="osbBuild.xml" set CLASSPATH=%OLD_CLASSPATH%
 
-set OSB_OPTS=-Dweblogic.home=C:/Oracle/Middleware/Oracle_Home/wlserver/server -Dosb.home=C:/Oracle/Middleware/Oracle_Home/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=C:/Oracle/Middleware/Oracle_Home/osb/tools/configjar/logging.xml
-set JAVA_OPTS=-Dweblogic.home=C:/Oracle/Middleware/Oracle_Home/wlserver -Dosb.home=C:/Oracle/Middleware/Oracle_Home/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=C:/Oracle/Middleware/Oracle_Home/osb/tools/configjar/logging.xml
+set OSB_OPTS=-Dweblogic.home=/Oracle/Middleware/Oracle_Home/wlserver/server -Dosb.home=/Oracle/Middleware/Oracle_Home/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=/Oracle/Middleware/Oracle_Home/osb/tools/configjar/logging.xml
+set JAVA_OPTS=-Dweblogic.home=/Oracle/Middleware/Oracle_Home/wlserver -Dosb.home=/Oracle/Middleware/Oracle_Home/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=/Oracle/Middleware/Oracle_Home/osb/tools/configjar/logging.xml
 
 call %MW_HOME%/wlserver/server/bin/setWLSEnv.cmd
-IF "%~nx1"=="osbBuild.xml" call C:/Oracle/Middleware/Oracle_Home/osb/tools/configjar/setenv.bat
-IF "%~nx1"=="wlsBuild.xml" call C:/Oracle/Middleware/Oracle_Home/osb/tools/configjar/setenv.bat
+IF "%~nx1"=="osbBuild.xml" call /Oracle/Middleware/Oracle_Home/osb/tools/configjar/setenv.bat
+IF "%~nx1"=="wlsBuild.xml" call /Oracle/Middleware/Oracle_Home/osb/tools/configjar/setenv.bat
 
 set BLD=%1
 shift

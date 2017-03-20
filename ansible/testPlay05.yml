@@ -1,0 +1,8 @@
+---
+- hosts: Lanre-ThinkPad-T460p
+  gather_facts: False
+  become: yes
+  tasks:
+     - name: apt-get update
+       raw: /usr/bin/apt-get update -qq
+

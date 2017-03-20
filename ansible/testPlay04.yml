@@ -1,0 +1,8 @@
+---
+- hosts: Lanre-ThinkPad-T460p
+  gather_facts: True
+  become: yes
+  tasks:
+     - name: ls -al > /tmp/rootDirList.log
+       raw: /bin/ls -al > /tmp/rootDirList.log
+

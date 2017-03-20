@@ -1,0 +1,26 @@
+---
+- hosts: 54.203.118.178
+  gather_facts: False
+  become: yes
+  tasks:
+     - name: yum erase httpd
+       raw: /usr/bin/yum -y erase httpd
+     - name: yum install httpd
+       raw: /usr/bin/yum -y install httpd
+     - name: start service httpd
+       raw: /sbin/service httpd start
+     - name: yum erase mysql-server
+       raw: /usr/bin/yum -y erase mysql-server
+     - name: yum install mysql-server
+       raw: /usr/bin/yum -y install mysql-server
+     - name: start service mysqld
+       raw: /sbin/service mysqld start
+     - name: yum erase php phy-mysql
+       raw: /usr/bin/yum -y erase php phy-mysql
+     - name: yum install php php-mysql
+       raw: /usr/bin/yum -y install php php-mysql
+     - name: configure Apache for auto-start on boot
+       raw: /sbin/chkconfig httpd on
+     - name: configure MySQL for auto-start on boot
+       raw: /sbin/chkconfig mysqld on
+

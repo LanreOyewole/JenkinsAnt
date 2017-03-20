@@ -1,0 +1,10 @@
+---
+- hosts: Lanre-ThinkPad-T460p
+  gather_facts: False
+  become: yes
+  tasks:
+     - name: apt-get update
+       raw: /usr/bin/apt-get update -qq
+     - name: Install python 2.7.12
+       raw: test -e /usr/bin/python || /usr/bin/apt-get install -q -y python2.7.12 python-simplejson
+
