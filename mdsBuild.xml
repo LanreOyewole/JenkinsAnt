@@ -295,18 +295,22 @@
 	</target>
         
 	<target name="test">
-	    <path id="jar.files">
-                <fileset dir="${mds.build.dir}" includes="${project.list}"/>
+	    <echo>ProjectList:= ${project.list}</echo>
+            <path id="jar.files">
+                <fileset dir="/home/lanre/git" />
+                <!-- <fileset dir="${mds.build.dir}" includes="${project.list}"/> -->
 	    </path>
-        <property name="jar.files.list" value="${toString:jar.files}"/>
-        <echo message="_____________________ Replacing (${mds.build.dir}) with () _______________________________" />
-		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="\\" replace="/" global="true" casesensitive="false" />
-		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="${mds.build.dir}/" replace="" global="true" casesensitive="false" />
-		<propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp=";" replace="${line.separator}" global="true" casesensitive="false" />
-        <echo message="#####################################################################################" />
-        <echo message="Built .JAR (${mds.deploy.dir}/${mds.application}_mds.jar) file-list follows: " />
-        <echo message="${jar.files.list}" />
-        <echo message="#####################################################################################" />
+            <property name="jar.files.list" value="${toString:jar.files}"/>
+            <echo message="_____________________ Replacing (${mds.build.dir}) with () _______________________________" />
+            <!--
+            <propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="\\" replace="/" global="true" casesensitive="false" />
+            <propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp="${mds.build.dir}/" replace="" global="true" casesensitive="false" />
+            <propertyregex property="jar.files.list" input="${jar.files.list}" override="true" regexp=";" replace="${line.separator}" global="true" casesensitive="false" />
+            -->
+            <echo message="#####################################################################################" />
+            <echo message="Built .JAR (${mds.deploy.dir}/${mds.application}_mds.jar) file-list follows: " />
+            <echo message="${jar.files.list}" />
+            <echo message="#####################################################################################" />
 	</target>
 
 </project>
