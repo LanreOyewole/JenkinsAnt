@@ -27,6 +27,8 @@ shift
 export PLT="$*"
 echo "Parameters*2:= $*"
 
+#echo BLD=${BLD}
+#[ "$BLD" = "/home/lanre/git/JenkinsAnt/mdsBuild.xml" ] && echo Building MDS I ...
 #echo TNV=${TNV}
 #echo PLT=${PLT}
 #echo aTNV is $ant.target.environment
@@ -35,9 +37,12 @@ echo "Parameters*2:= $*"
 #[ "$ant.project.list" != "" ] && export PLT="$ant.project.list"
 #[ "$ant.target.environment" != "" ] && export TNV="$ant.target.environment"
 
-[ "$BLD" = "*/scaBuild.xml" ] && export CLASSPATH=$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-wls.jar:$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-api.jar:$MW_HOME/wlserver/server/lib/weblogic.jar:$MW_HOME/Oracle_OSB1/lib/alsb.jar:$MW_HOME/oep/common/modules/com.bea.common.configfwk_1.3.0.0.jar
-[ "$BLD" = "*/mdsBuild.xml" ] && export CLASSPATH=$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-wls.jar:$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-api.jar:$MW_HOME/wlserver/server/lib/weblogic.jar:$MW_HOME/Oracle_OSB1/lib/alsb.jar:$MW_HOME/oep/common/modules/com.bea.common.configfwk_1.3.0.0.jar
-[ "$BLD" = "*/osbBuild.xml" ] && export CLASSPATH=$OLD_CLASSPATH$
+BTG=`echo ${BLD} | sed -e 's/.*\///'`
+#[ "$BTG" = "mdsBuild.xml" ] && echo Building MDS II ...
+
+[ "$BTG" = "scaBuild.xml" ] && export CLASSPATH=$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-wls.jar:$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-api.jar:$MW_HOME/wlserver/server/lib/weblogic.jar:$MW_HOME/Oracle_OSB1/lib/alsb.jar:$MW_HOME/oep/common/modules/com.bea.common.configfwk_1.3.0.0.jar
+[ "$BTG" = "mdsBuild.xml" ] && export CLASSPATH=$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-wls.jar:$MW_HOME/osb/lib/modules/oracle.servicebus.kernel-api.jar:$MW_HOME/wlserver/server/lib/weblogic.jar:$MW_HOME/Oracle_OSB1/lib/alsb.jar:$MW_HOME/oep/common/modules/com.bea.common.configfwk_1.3.0.0.jar
+[ "$BTG" = "osbBuild.xml" ] && export CLASSPATH=$OLD_CLASSPATH$
 
 export OSB_OPTS="-Dweblogic.home=/home/lanre/Oracle/Middleware/OracleHome/wlserver/server -Dosb.home=/home/lanre/Oracle/Middleware/OracleHome/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=/home/lanre/Oracle/Middleware/OracleHome/osb/tools/configjar/logging.xml"
 export JAVA_OPTS="-Dweblogic.home=/home/lanre/Oracle/Middleware/OracleHome/wlserver -Dosb.home=/home/lanre/Oracle/Middleware/OracleHome/osb -Djava.util.logging.config.class=oracle.core.ojdl.logging.LoggingConfiguration -Doracle.core.ojdl.logging.config.file=/home/lanre/Oracle/Middleware/OracleHome/osb/tools/configjar/logging.xml"
@@ -48,5 +53,5 @@ $MW_HOME/wlserver/server/bin/setWLSEnv.sh
 [ "$BLD" = "*wlsBuild.xml" ] && /home/lanre/Oracle/Middleware/OracleHome/osb/tools/configjar/setenv.sh
 
 echo Running CMD: ant -f $BLD $TGT -Dtarget.environment=$TNV -Dproject.list=$PLT
-ant -f $BLD $TGT -Dtarget.environment="$TNV" -Dproject.list=$PLT
+ant -v -f $BLD $TGT -Dtarget.environment="$TNV" -Dproject.list=$PLT
 
